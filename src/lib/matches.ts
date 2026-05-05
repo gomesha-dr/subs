@@ -1,9 +1,9 @@
-import { supabase } from './supabase';
+import { supabaseServer } from './supabase';
 import type { Match, MatchAttendance, PublicMatchAttendance } from './types';
 
 export async function listUpcomingMatches(): Promise<Match[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('matches')
     .select('*')
     .gte('match_date', today)
@@ -15,7 +15,7 @@ export async function listUpcomingMatches(): Promise<Match[]> {
 
 export async function listPastMatches(): Promise<Match[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('matches')
     .select('*')
     .lt('match_date', today)
@@ -26,7 +26,7 @@ export async function listPastMatches(): Promise<Match[]> {
 }
 
 export async function getMatchById(id: string): Promise<Match | null> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('matches')
     .select('*')
     .eq('id', id)
@@ -38,7 +38,7 @@ export async function getMatchById(id: string): Promise<Match | null> {
 export type CreateMatchInput = Omit<Match, 'id' | 'created_at' | 'updated_at'>;
 
 export async function createMatch(input: CreateMatchInput): Promise<Match> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('matches')
     .insert(input)
     .select('*')
@@ -48,7 +48,7 @@ export async function createMatch(input: CreateMatchInput): Promise<Match> {
 }
 
 export async function updateMatch(id: string, patch: Partial<CreateMatchInput>): Promise<Match> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('matches')
     .update(patch)
     .eq('id', id)
@@ -59,7 +59,7 @@ export async function updateMatch(id: string, patch: Partial<CreateMatchInput>):
 }
 
 export async function deleteMatch(id: string): Promise<void> {
-  const { error } = await supabase.from('matches').delete().eq('id', id);
+  const { error } = await supabaseServer().from('matches').delete().eq('id', id);
   if (error) throw new Error(error.message);
 }
 
@@ -67,7 +67,7 @@ const PUBLIC_ATTENDANCE_COLUMNS =
   'match_id, player_id, is_attending, override_primary_position, override_secondary_position, override_max_block_minutes, override_max_total_minutes, created_at, updated_at';
 
 export async function listPublicAttendances(matchId: string): Promise<PublicMatchAttendance[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('match_attendances')
     .select(PUBLIC_ATTENDANCE_COLUMNS)
     .eq('match_id', matchId);
@@ -79,7 +79,7 @@ export async function getMyAttendance(
   matchId: string,
   playerId: string,
 ): Promise<MatchAttendance | null> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('match_attendances')
     .select('*')
     .eq('match_id', matchId)
@@ -94,7 +94,7 @@ export async function upsertAttendance(
   playerId: string,
   patch: Partial<Omit<MatchAttendance, 'match_id' | 'player_id' | 'created_at' | 'updated_at'>>,
 ): Promise<MatchAttendance> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer()
     .from('match_attendances')
     .upsert({ match_id: matchId, player_id: playerId, ...patch }, {
       onConflict: 'match_id,player_id',
