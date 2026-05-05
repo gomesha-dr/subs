@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getCurrentPlayerId } from '@/lib/session';
 import { getPlayerById, listAllNames, listPublicPlayers } from '@/lib/players';
 import { WelcomeForm } from './_components/WelcomeForm';
@@ -22,9 +23,17 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto w-full max-w-md p-4 space-y-6">
-        <header>
-          <h1 className="text-2xl font-semibold">Subs</h1>
-          <p className="text-sm text-gray-500">7-a-side rotation</p>
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Subs</h1>
+            <p className="text-sm text-gray-500">7-a-side rotation</p>
+          </div>
+          <Link
+            href="/matches"
+            className="bg-black text-white text-sm rounded-md px-3 py-2"
+          >
+            Matches →
+          </Link>
         </header>
         <MyProfileCard player={me} />
         <TeamList players={players} currentId={me.id} />
