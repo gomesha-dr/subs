@@ -200,11 +200,22 @@ export default async function MatchDetailPage({ params }: Params) {
               >
                 ▶ Run match (timer + sub alerts)
               </Link>
-              <GenerateScheduleButton
-                matchId={matchId}
-                disabled={!match.formation || outfieldAttending < 6}
-                label="Re-generate"
-              />
+              <div className="flex gap-2 items-start">
+                <Link
+                  href={`/matches/${matchId}/edit-schedule`}
+                  className="flex-1 text-center rounded-md border border-gray-300 bg-white py-2 text-sm"
+                >
+                  Edit schedule
+                </Link>
+                <div className="flex-1">
+                  <GenerateScheduleButton
+                    matchId={matchId}
+                    disabled={!match.formation || outfieldAttending < 6}
+                    label="Re-generate"
+                    hasEdits={Boolean((schedule as { edited_at?: string } | null)?.edited_at)}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </section>

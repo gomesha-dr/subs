@@ -8,17 +8,25 @@ export function GenerateScheduleButton({
   disabled,
   disabledReason,
   label = 'Generate schedule',
+  hasEdits,
 }: {
   matchId: string;
   disabled?: boolean;
   disabledReason?: string;
   label?: string;
+  hasEdits?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function handleClick() {
     setError(null);
+    if (hasEdits) {
+      const ok = window.confirm(
+        'Re-generating will replace the schedule you edited manually. Continue?',
+      );
+      if (!ok) return;
+    }
     startTransition(async () => {
       const result = await generateScheduleAction(matchId);
       if (result && 'error' in result) setError(result.error);

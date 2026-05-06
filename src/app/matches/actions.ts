@@ -14,13 +14,16 @@ import {
 } from '@/lib/matches';
 import { supabaseServer } from '@/lib/supabase';
 import {
+  computeSummaries,
+  computeUnfilledSlots,
   generateSchedule,
   parseFormation,
   totalOutfieldSeats,
   type PlayerForScheduling,
   type Schedule,
 } from '@/lib/scheduler';
-import type { Player } from '@/lib/types';
+import { listPublicPlayers } from '@/lib/players';
+import type { Player, Position } from '@/lib/types';
 
 export type ActionResult = { error: string } | { ok: true };
 
@@ -187,13 +190,17 @@ export async function saveScheduleEditsAction(
   matchId: string,
   blocks: Array<{
     player_id: string;
-    position: string;
+    position: Position;
     start_slot: number;
     end_slot: number;
   }>,
 ): Promise<ActionResult> {
   const match = await getMatchById(matchId);
   if (!match) return { error: 'Match not found.' };
+  if (!match.formation) return { error: 'Match has no formation set.' };
+  const formation = parseFormation(match.formation);
+  if (!formation) return { error: `Invalid formation "${match.formation}".` };
+
   const totalSlots = match.duration_minutes / 5;
 
   // Structural validation only — captain knows best, so we don't enforce stamina caps.
@@ -224,10 +231,40 @@ export async function saveScheduleEditsAction(
     }
   }
 
+  // Recompute unfilled_slots and player_summaries from the new blocks so the warning
+  // and per-player stats reflect the captain's manual edits.
+  const assignments: Array<{ position: Position; slot: number }> = [];
+  for (const b of blocks) {
+    for (let s = b.start_slot; s < b.end_slot; s++) {
+      assignments.push({ position: b.position, slot: s });
+    }
+  }
+  const unfilled_slots = computeUnfilledSlots(assignments, totalSlots, formation);
+
+  // Build the outfield list from attending players for summaries.
+  const attendances = await listPublicAttendances(matchId);
+  const attendingIds = new Set(attendances.filter((a) => a.is_attending).map((a) => a.player_id));
+  const players = await listPublicPlayers();
+  const outfield = players
+    .filter((p) => attendingIds.has(p.id) && p.id !== match.goalkeeper_id)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      pref_1_position: p.pref_1_position,
+      pref_2_position: p.pref_2_position,
+      pref_3_position: p.pref_3_position,
+      max_block_minutes: p.max_block_minutes,
+      max_total_minutes: p.max_total_minutes,
+      skill_score: 0,
+    }));
+  const player_summaries = computeSummaries(blocks, outfield);
+
   const existing = (match.generated_schedule ?? {}) as Record<string, unknown>;
   const newSchedule = {
     ...existing,
     blocks,
+    unfilled_slots,
+    player_summaries,
     edited_at: new Date().toISOString(),
   };
 
