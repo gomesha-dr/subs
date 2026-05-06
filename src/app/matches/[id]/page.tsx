@@ -30,7 +30,6 @@ const FORMATIONS: Array<{ value: string; label: string }> = [
   { value: '3-3-1', label: '3-3-1 (defensive)' },
   { value: '3-2-2', label: '3-2-2 (back three)' },
   { value: '1-3-3', label: '1-3-3 (attacking)' },
-  { value: '3-2-1', label: '3-2-1 (parked bus)' },
 ];
 
 type Params = { params: Promise<{ id: string }> };
