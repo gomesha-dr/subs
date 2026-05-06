@@ -105,6 +105,7 @@ export default async function MatchDetailPage({ params }: Params) {
           <form
             action={setMatchGoalkeeperFromForm.bind(null, matchId)}
             className="flex gap-2"
+            key={`gk-${match.goalkeeper_id ?? 'empty'}`}
           >
             <select
               name="goalkeeper_id"
@@ -135,6 +136,7 @@ export default async function MatchDetailPage({ params }: Params) {
           <form
             action={setMatchFormationFromForm.bind(null, matchId)}
             className="flex gap-2"
+            key={`formation-${match.formation ?? 'empty'}`}
           >
             <select
               name="formation"
