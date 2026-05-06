@@ -104,6 +104,28 @@ export async function deleteMatchAction(matchId: string): Promise<void> {
   redirect('/matches');
 }
 
+export async function updateMatchTimingsFromForm(
+  matchId: string,
+  formData: FormData,
+): Promise<void> {
+  const duration = parseInt1To240(formData.get('duration_minutes'));
+  const half = parseInt1To240(formData.get('half_length_minutes'));
+  const notesRaw = formData.get('notes');
+  const notes =
+    typeof notesRaw === 'string' && notesRaw.trim() !== '' ? notesRaw.trim() : null;
+
+  // Silent reject on invalid input — UI's number inputs already constrain.
+  if (duration === null || half === null) return;
+  if (half > duration) return;
+
+  await updateMatch(matchId, {
+    duration_minutes: duration,
+    half_length_minutes: half,
+    notes,
+  });
+  revalidatePath(`/matches/${matchId}`);
+}
+
 export async function setMatchFormationFromForm(
   matchId: string,
   formData: FormData,

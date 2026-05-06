@@ -48,7 +48,7 @@ export function CreateMatchForm() {
               type="number"
               min={1}
               max={240}
-              defaultValue={80}
+              defaultValue={90}
               required
               className="w-full rounded-md border border-gray-300 p-2"
             />
@@ -59,7 +59,7 @@ export function CreateMatchForm() {
               type="number"
               min={1}
               max={120}
-              defaultValue={40}
+              defaultValue={45}
               required
               className="w-full rounded-md border border-gray-300 p-2"
             />

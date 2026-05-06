@@ -7,6 +7,7 @@ import {
   toggleMyAttendance,
   setMatchGoalkeeperFromForm,
   setMatchFormationFromForm,
+  updateMatchTimingsFromForm,
   clearScheduleAction,
   deleteMatchAction,
 } from '../actions';
@@ -154,6 +155,58 @@ export default async function MatchDetailPage({ params }: Params) {
           </form>
           <p className="mt-2 text-xs text-gray-500">
             Outfield only (def-mid-att). The GK is separate.
+          </p>
+        </section>
+
+        <section className="rounded-lg border border-gray-200 p-4 bg-white">
+          <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Match length</p>
+          <form
+            action={updateMatchTimingsFromForm.bind(null, matchId)}
+            className="space-y-2"
+            key={`timings-${match.duration_minutes}-${match.half_length_minutes}-${match.notes ?? ''}`}
+          >
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <label className="block">
+                <span className="block text-xs text-gray-600 mb-1">Duration (min)</span>
+                <input
+                  name="duration_minutes"
+                  type="number"
+                  min={1}
+                  max={240}
+                  defaultValue={match.duration_minutes}
+                  required
+                  className="w-full rounded-md border border-gray-300 p-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-xs text-gray-600 mb-1">Half length (min)</span>
+                <input
+                  name="half_length_minutes"
+                  type="number"
+                  min={1}
+                  max={120}
+                  defaultValue={match.half_length_minutes}
+                  required
+                  className="w-full rounded-md border border-gray-300 p-2 text-sm"
+                />
+              </label>
+            </div>
+            <label className="block text-sm">
+              <span className="block text-xs text-gray-600 mb-1">Notes (optional)</span>
+              <input
+                name="notes"
+                type="text"
+                defaultValue={match.notes ?? ''}
+                placeholder="e.g. opponent, pitch"
+                className="w-full rounded-md border border-gray-300 p-2 text-sm"
+              />
+            </label>
+            <button type="submit" className="w-full rounded-md bg-black text-white py-2 text-sm">
+              Save match settings
+            </button>
+          </form>
+          <p className="mt-2 text-xs text-gray-500">
+            Changing duration after a schedule has been generated will leave the schedule out of sync — re-generate after any change.
           </p>
         </section>
 
