@@ -116,7 +116,7 @@ export async function setMatchFormationFromForm(
   } else {
     const parsed = parseFormation(trimmed);
     if (!parsed) return; // silently ignore invalid; UI prevents this
-    if (totalOutfieldSeats(parsed) !== 6) return;
+    if (totalOutfieldSeats(parsed) !== 7) return;
     await updateMatch(matchId, { formation: trimmed });
   }
   revalidatePath(`/matches/${matchId}`);
@@ -128,8 +128,8 @@ export async function generateScheduleAction(matchId: string): Promise<ActionRes
   if (!match.formation) return { error: 'Pick a formation first.' };
   const formation = parseFormation(match.formation);
   if (!formation) return { error: 'Formation is invalid.' };
-  if (totalOutfieldSeats(formation) !== 6) {
-    return { error: 'Formation must total 6 outfield players.' };
+  if (totalOutfieldSeats(formation) !== 7) {
+    return { error: 'Formation must total 7 outfield players.' };
   }
 
   const attendances = await listPublicAttendances(matchId);

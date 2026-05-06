@@ -26,7 +26,7 @@ export default async function Home() {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Subs</h1>
-            <p className="text-sm text-gray-500">7-a-side rotation</p>
+            <p className="text-sm text-gray-500">8-a-side rotation</p>
           </div>
           <Link
             href="/matches"

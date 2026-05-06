@@ -80,8 +80,8 @@ const POSITIONS_TUPLE: Array<readonly [Position, keyof Formation]> = [
 
 export function generateSchedule(input: SchedulerInput): Schedule | SchedulerError {
   const seats = totalOutfieldSeats(input.formation);
-  if (seats !== 6) {
-    return { kind: 'invalid_formation', details: `Formation must sum to 6 (got ${seats}).` };
+  if (seats < 1) {
+    return { kind: 'invalid_formation', details: `Formation must total at least 1 outfield seat (got ${seats}).` };
   }
   if (input.match_duration_minutes <= 0 || input.slot_minutes <= 0) {
     return { kind: 'invalid_input', details: 'Match duration and slot minutes must be positive.' };

@@ -26,9 +26,10 @@ function formatDate(dateStr: string, timeStr: string | null): string {
 }
 
 const FORMATIONS: Array<{ value: string; label: string }> = [
-  { value: '2-3-1', label: '2-3-1 (defensive mid)' },
-  { value: '1-3-2', label: '1-3-2 (attacking)' },
-  { value: '2-2-2', label: '2-2-2 (balanced)' },
+  { value: '2-3-2', label: '2-3-2 (balanced)' },
+  { value: '3-3-1', label: '3-3-1 (defensive)' },
+  { value: '3-2-2', label: '3-2-2 (back three)' },
+  { value: '1-3-3', label: '1-3-3 (attacking)' },
   { value: '3-2-1', label: '3-2-1 (parked bus)' },
 ];
 
@@ -176,12 +177,12 @@ export default async function MatchDetailPage({ params }: Params) {
               </p>
               <GenerateScheduleButton
                 matchId={matchId}
-                disabled={!match.formation || outfieldAttending < 6}
+                disabled={!match.formation || outfieldAttending < 7}
                 disabledReason={
                   !match.formation
                     ? 'Pick a formation first.'
-                    : outfieldAttending < 6
-                      ? `Need 6 outfield players (currently ${outfieldAttending}).`
+                    : outfieldAttending < 7
+                      ? `Need 7 outfield players (currently ${outfieldAttending}).`
                       : undefined
                 }
               />
@@ -210,7 +211,7 @@ export default async function MatchDetailPage({ params }: Params) {
                 <div className="flex-1">
                   <GenerateScheduleButton
                     matchId={matchId}
-                    disabled={!match.formation || outfieldAttending < 6}
+                    disabled={!match.formation || outfieldAttending < 7}
                     label="Re-generate"
                     hasEdits={Boolean((schedule as { edited_at?: string } | null)?.edited_at)}
                   />

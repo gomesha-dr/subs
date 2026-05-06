@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Subs",
-  description: "Player rotation for an amateur 7-a-side soccer team",
+  description: "Player rotation for an amateur 8-a-side soccer team",
 };
 
 export default function RootLayout({

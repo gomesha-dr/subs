@@ -23,7 +23,7 @@ export function WelcomeForm({ existingNames }: { existingNames: string[] }) {
   return (
     <div className="mx-auto w-full max-w-md p-6">
       <h1 className="text-2xl font-semibold mb-1">Welcome to Subs</h1>
-      <p className="text-sm text-gray-600 mb-6">Player rotation for our 7-a-side team.</p>
+      <p className="text-sm text-gray-600 mb-6">Player rotation for our 8-a-side team.</p>
 
       <div className="flex gap-2 mb-6 text-sm">
         <button
