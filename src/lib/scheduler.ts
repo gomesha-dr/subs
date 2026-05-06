@@ -205,29 +205,53 @@ function computeBudgets(
   totalSeatMinutes: number,
   slotMinutes: number,
 ): Map<string, number> {
+  // Goal: every player gets a budget of roughly their max_block (one solid stint),
+  // and any leftover seat-minutes are distributed to players who CAN absorb more
+  // (max_total - current_budget headroom). max_total is treated as a hard ceiling,
+  // never a target — players who could play more but don't need to, just don't.
   const totalSlotsNeeded = Math.floor(totalSeatMinutes / slotMinutes);
-  const maxSlotsByPlayer = new Map<string, number>(
+  const maxBlockSlots = new Map<string, number>(
+    players.map((p) => [p.id, Math.floor(p.max_block_minutes / slotMinutes)]),
+  );
+  const maxTotalSlots = new Map<string, number>(
     players.map((p) => [p.id, Math.floor(p.max_total_minutes / slotMinutes)]),
   );
   const budgetSlots = new Map<string, number>(players.map((p) => [p.id, 0]));
 
-  // Initial pass: floor(fair share), capped by each player's max.
-  const baseShare = Math.floor(totalSlotsNeeded / players.length);
+  // Initial pass: each player gets max_block_minutes (one stint), capped by max_total.
   let allocated = 0;
   for (const p of players) {
-    const got = Math.min(baseShare, maxSlotsByPlayer.get(p.id)!);
+    const got = Math.min(maxBlockSlots.get(p.id)!, maxTotalSlots.get(p.id)!);
     budgetSlots.set(p.id, got);
     allocated += got;
   }
 
-  // Distribute leftover slots one-by-one to the player with the most headroom.
-  // Stops when no player has headroom or all slots placed.
+  // If sum of max_blocks exceeds available seats (rare — only when most players
+  // have very high max_blocks), trim from the largest budgets one slot at a time.
+  while (allocated > totalSlotsNeeded) {
+    let bestId: string | null = null;
+    let bestSlots = 0;
+    for (const p of players) {
+      const cur = budgetSlots.get(p.id)!;
+      if (cur > bestSlots) {
+        bestSlots = cur;
+        bestId = p.id;
+      }
+    }
+    if (!bestId || bestSlots <= 1) break;
+    budgetSlots.set(bestId, bestSlots - 1);
+    allocated--;
+  }
+
+  // Distribute any leftover seat-minutes to players with the most headroom under
+  // max_total. High-stamina players naturally absorb more; low-stamina ones stay
+  // at their max_block.
   let remaining = totalSlotsNeeded - allocated;
   while (remaining > 0) {
     let best: string | null = null;
     let bestHeadroom = 0;
     for (const p of players) {
-      const headroom = maxSlotsByPlayer.get(p.id)! - budgetSlots.get(p.id)!;
+      const headroom = maxTotalSlots.get(p.id)! - budgetSlots.get(p.id)!;
       if (headroom > bestHeadroom) {
         bestHeadroom = headroom;
         best = p.id;
