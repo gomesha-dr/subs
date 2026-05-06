@@ -73,11 +73,12 @@ export function EditProfileForm({ player }: { player: Player }) {
             type="number"
             min={1}
             max={10}
-            placeholder="Leave blank to keep current"
+            defaultValue={player.skill_score}
+            required
             className="w-full rounded-md border border-gray-300 p-2"
           />
           <span className="block mt-1 text-xs text-gray-500">
-            Hidden by design. Leaving this blank keeps your current score.
+            Only the algorithm uses this — it&apos;s never displayed to anyone, including the captain.
           </span>
         </Field>
 

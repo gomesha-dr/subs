@@ -32,9 +32,9 @@ If you're tired or hurt and want to play less in one match — for now, edit you
 
 ## 3. About privacy
 
-There are no logins (so it's super easy to use). The trade-off: anyone with the link can change anyone's profile. **Don't share the link outside the team.**
+There are no logins (so it's super easy to use). The browser remembers who you are via a cookie, so **you can only edit your own profile** — when you tap "Edit", you only ever see your own data. Other teammates' profiles are read-only (and their skill scores are never displayed anywhere).
 
-The skill score is the one thing genuinely protected — the edit form never *shows* the current value (you have to retype it to change it), so even if someone opens your profile they can't read it.
+If you switch phones or clear browser data, just pick "I'm an existing player" on first visit and select your name from the autocomplete — the app will recognise you. **Don't share the link outside the team** — anyone with the link can mark themselves as a player and toggle attendance.
 
 ---
 

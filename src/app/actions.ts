@@ -100,30 +100,24 @@ export async function updateMyProfile(formData: FormData): Promise<ActionResult>
   const prefs = parsePreferenceTriple(formData);
   const block = parseInt1To120(formData.get('max_block_minutes'));
   const total = parseInt1To120(formData.get('max_total_minutes'));
-  const skillRaw = formData.get('skill_score');
+  const skill = parseSkill(formData.get('skill_score'));
   const isGk = formData.get('is_goalkeeper') === 'on';
 
   if (typeof prefs === 'string') return { error: prefs };
   if (block === null) return { error: 'Block minutes must be a whole number 1–120.' };
   if (total === null) return { error: 'Total minutes must be a whole number 1–120.' };
   if (total < block) return { error: 'Total minutes must be ≥ block minutes.' };
+  if (skill === null) return { error: 'Skill score must be a whole number 1–10.' };
 
-  const patch: Record<string, unknown> = {
+  await updatePlayer(id!, {
     pref_1_position: prefs.p1,
     pref_2_position: prefs.p2,
     pref_3_position: prefs.p3,
     max_block_minutes: block,
     max_total_minutes: total,
+    skill_score: skill,
     is_goalkeeper: isGk,
-  };
-
-  if (typeof skillRaw === 'string' && skillRaw.trim() !== '') {
-    const skill = parseSkill(skillRaw);
-    if (skill === null) return { error: 'Skill score must be a whole number 1–10.' };
-    patch.skill_score = skill;
-  }
-
-  await updatePlayer(id!, patch);
+  });
   revalidatePath('/');
   redirect('/');
 }
