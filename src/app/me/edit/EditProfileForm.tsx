@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { updateMyProfile } from '@/app/actions';
+import { PreferencePicker } from '@/app/_components/PreferencePicker';
 import type { Player } from '@/lib/types';
 
 export function EditProfileForm({ player }: { player: Player }) {
@@ -28,30 +29,17 @@ export function EditProfileForm({ player }: { player: Player }) {
       </p>
 
       <form action={handleSubmit} className="space-y-4">
-        <Field label="Primary position">
-          <select
-            name="primary_position"
-            required
-            defaultValue={player.primary_position}
-            className="w-full rounded-md border border-gray-300 p-2"
-          >
-            <option value="attack">Attack</option>
-            <option value="midfield">Midfield</option>
-            <option value="defence">Defence</option>
-          </select>
-        </Field>
-
-        <Field label="Secondary position (optional)">
-          <select
-            name="secondary_position"
-            defaultValue={player.secondary_position ?? ''}
-            className="w-full rounded-md border border-gray-300 p-2"
-          >
-            <option value="">None</option>
-            <option value="attack">Attack</option>
-            <option value="midfield">Midfield</option>
-            <option value="defence">Defence</option>
-          </select>
+        <Field label="Rank your positions (1st = most preferred)">
+          <PreferencePicker
+            defaults={{
+              p1: player.pref_1_position,
+              p2: player.pref_2_position,
+              p3: player.pref_3_position,
+            }}
+          />
+          <span className="block mt-1 text-xs text-gray-500">
+            You&apos;ll be asked to play your 3rd-rank position only when nobody else can cover it.
+          </span>
         </Field>
 
         <div className="grid grid-cols-2 gap-4">

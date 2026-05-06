@@ -29,8 +29,11 @@ export function TeamList({ players, currentId }: { players: PublicPlayer[]; curr
                   {p.is_goalkeeper && <span className="ml-2 text-xs text-gray-500">GK</span>}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {POSITION_LABEL[p.primary_position]}
-                  {p.secondary_position ? ` / ${POSITION_LABEL[p.secondary_position]}` : ''}
+                  {POSITION_LABEL[p.pref_1_position]}
+                  {' › '}
+                  {POSITION_LABEL[p.pref_2_position]}
+                  {' › '}
+                  {POSITION_LABEL[p.pref_3_position]}
                 </p>
               </div>
               <p className="text-xs text-gray-500">

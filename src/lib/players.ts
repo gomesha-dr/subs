@@ -2,7 +2,7 @@ import { supabaseServer } from './supabase';
 import type { Player, PublicPlayer } from './types';
 
 const PUBLIC_COLUMNS =
-  'id, name, primary_position, secondary_position, max_block_minutes, max_total_minutes, is_goalkeeper, created_at, updated_at';
+  'id, name, pref_1_position, pref_2_position, pref_3_position, max_block_minutes, max_total_minutes, is_goalkeeper, created_at, updated_at';
 
 export async function listAllNames(): Promise<string[]> {
   const { data, error } = await supabaseServer()

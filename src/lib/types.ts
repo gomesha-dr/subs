@@ -4,8 +4,9 @@ export type Position = (typeof POSITIONS)[number];
 export type Player = {
   id: string;
   name: string;
-  primary_position: Position;
-  secondary_position: Position | null;
+  pref_1_position: Position;
+  pref_2_position: Position;
+  pref_3_position: Position;
   max_block_minutes: number;
   max_total_minutes: number;
   skill_score: number;
@@ -16,6 +17,13 @@ export type Player = {
 
 export type PublicPlayer = Omit<Player, 'skill_score'>;
 
+/** Returns the ranked preference (1, 2, or 3) for a given position. */
+export function positionRank(player: { pref_1_position: Position; pref_2_position: Position; pref_3_position: Position }, position: Position): 1 | 2 | 3 {
+  if (player.pref_1_position === position) return 1;
+  if (player.pref_2_position === position) return 2;
+  return 3;
+}
+
 export type Match = {
   id: string;
   match_date: string;
@@ -24,6 +32,8 @@ export type Match = {
   half_length_minutes: number;
   goalkeeper_id: string | null;
   notes: string | null;
+  formation: string | null;
+  generated_schedule: unknown | null;
   created_at: string;
   updated_at: string;
 };

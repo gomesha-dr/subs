@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { identifyByName, createMyProfile } from '../actions';
+import { PreferencePicker } from './PreferencePicker';
 
 type Mode = 'existing' | 'new';
 
@@ -59,22 +60,11 @@ export function WelcomeForm({ existingNames }: { existingNames: string[] }) {
 
         {mode === 'new' && (
           <>
-            <Field label="Primary position">
-              <select name="primary_position" required defaultValue="" className="w-full rounded-md border border-gray-300 p-2">
-                <option value="" disabled>Pick one</option>
-                <option value="attack">Attack</option>
-                <option value="midfield">Midfield</option>
-                <option value="defence">Defence</option>
-              </select>
-            </Field>
-
-            <Field label="Secondary position (optional)">
-              <select name="secondary_position" defaultValue="" className="w-full rounded-md border border-gray-300 p-2">
-                <option value="">None</option>
-                <option value="attack">Attack</option>
-                <option value="midfield">Midfield</option>
-                <option value="defence">Defence</option>
-              </select>
+            <Field label="Rank your positions (1st = most preferred)">
+              <PreferencePicker />
+              <span className="block mt-1 text-xs text-gray-500">
+                You&apos;ll be asked to play your 3rd-rank position only when nobody else can cover it.
+              </span>
             </Field>
 
             <div className="grid grid-cols-2 gap-4">

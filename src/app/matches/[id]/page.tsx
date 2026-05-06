@@ -6,8 +6,12 @@ import { listPublicPlayers } from '@/lib/players';
 import {
   toggleMyAttendance,
   setMatchGoalkeeperFromForm,
+  setMatchFormationFromForm,
+  clearScheduleAction,
   deleteMatchAction,
 } from '../actions';
+import { Timeline } from './Timeline';
+import { GenerateScheduleButton } from './GenerateScheduleButton';
 
 function formatDate(dateStr: string, timeStr: string | null): string {
   const date = new Date(dateStr + 'T00:00:00');
@@ -20,6 +24,13 @@ function formatDate(dateStr: string, timeStr: string | null): string {
   if (!timeStr) return dateLabel;
   return `${dateLabel}, ${timeStr.slice(0, 5)}`;
 }
+
+const FORMATIONS: Array<{ value: string; label: string }> = [
+  { value: '2-3-1', label: '2-3-1 (defensive mid)' },
+  { value: '1-3-2', label: '1-3-2 (attacking)' },
+  { value: '2-2-2', label: '2-2-2 (balanced)' },
+  { value: '3-2-1', label: '3-2-1 (parked bus)' },
+];
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -47,6 +58,14 @@ export default async function MatchDetailPage({ params }: Params) {
   const goalkeeperPlayer = match.goalkeeper_id
     ? players.find((p) => p.id === match.goalkeeper_id) ?? null
     : null;
+
+  const schedule =
+    match.generated_schedule && typeof match.generated_schedule === 'object'
+      ? (match.generated_schedule as Parameters<typeof Timeline>[0]['schedule'])
+      : null;
+
+  const attendingPlayers = players.filter((p) => attendanceByPlayer.get(p.id)?.is_attending);
+  const outfieldAttendingPlayers = attendingPlayers.filter((p) => p.id !== match.goalkeeper_id);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,6 +130,85 @@ export default async function MatchDetailPage({ params }: Params) {
           )}
         </section>
 
+        <section className="rounded-lg border border-gray-200 p-4 bg-white">
+          <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Formation</p>
+          <form
+            action={setMatchFormationFromForm.bind(null, matchId)}
+            className="flex gap-2"
+          >
+            <select
+              name="formation"
+              defaultValue={match.formation ?? ''}
+              className="flex-1 rounded-md border border-gray-300 p-2 text-sm"
+            >
+              <option value="">— Pick a formation —</option>
+              {FORMATIONS.map((f) => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+            <button type="submit" className="rounded-md bg-black text-white px-4 text-sm">
+              Save
+            </button>
+          </form>
+          <p className="mt-2 text-xs text-gray-500">
+            Outfield only (def-mid-att). The GK is separate.
+          </p>
+        </section>
+
+        <section className="rounded-lg border border-gray-200 p-4 bg-white">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs uppercase tracking-wide text-gray-500">Schedule</p>
+            {schedule && (
+              <form action={clearScheduleAction.bind(null, matchId)}>
+                <button type="submit" className="text-xs text-gray-500 underline">
+                  Clear
+                </button>
+              </form>
+            )}
+          </div>
+
+          {!schedule ? (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                {match.formation
+                  ? `Ready to generate. ${outfieldAttending} outfield player${outfieldAttending === 1 ? '' : 's'} marked as coming.`
+                  : 'Pick a formation above first, then generate.'}
+              </p>
+              <GenerateScheduleButton
+                matchId={matchId}
+                disabled={!match.formation || outfieldAttending < 6}
+                disabledReason={
+                  !match.formation
+                    ? 'Pick a formation first.'
+                    : outfieldAttending < 6
+                      ? `Need 6 outfield players (currently ${outfieldAttending}).`
+                      : undefined
+                }
+              />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Timeline
+                schedule={schedule}
+                players={outfieldAttendingPlayers}
+                matchDurationMinutes={match.duration_minutes}
+                halfLengthMinutes={match.half_length_minutes}
+              />
+              <Link
+                href={`/matches/${matchId}/run`}
+                className="block w-full text-center rounded-md bg-emerald-600 text-white py-2 text-sm font-semibold"
+              >
+                ▶ Run match (timer + sub alerts)
+              </Link>
+              <GenerateScheduleButton
+                matchId={matchId}
+                disabled={!match.formation || outfieldAttending < 6}
+                label="Re-generate"
+              />
+            </div>
+          )}
+        </section>
+
         <section>
           <h2 className="text-lg font-semibold mb-1">
             Squad ({attendingCount} coming{outfieldAttending !== attendingCount ? `, ${outfieldAttending} outfield` : ''})
@@ -155,3 +253,4 @@ export default async function MatchDetailPage({ params }: Params) {
     </div>
   );
 }
+

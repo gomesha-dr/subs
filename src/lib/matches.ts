@@ -35,7 +35,19 @@ export async function getMatchById(id: string): Promise<Match | null> {
   return data;
 }
 
-export type CreateMatchInput = Omit<Match, 'id' | 'created_at' | 'updated_at'>;
+export type CreateMatchInput = {
+  match_date: string;
+  match_time: string | null;
+  duration_minutes: number;
+  half_length_minutes: number;
+  goalkeeper_id: string | null;
+  notes: string | null;
+};
+
+export type UpdateMatchInput = Partial<CreateMatchInput> & {
+  formation?: string | null;
+  generated_schedule?: unknown | null;
+};
 
 export async function createMatch(input: CreateMatchInput): Promise<Match> {
   const { data, error } = await supabaseServer()
@@ -47,7 +59,7 @@ export async function createMatch(input: CreateMatchInput): Promise<Match> {
   return data;
 }
 
-export async function updateMatch(id: string, patch: Partial<CreateMatchInput>): Promise<Match> {
+export async function updateMatch(id: string, patch: UpdateMatchInput): Promise<Match> {
   const { data, error } = await supabaseServer()
     .from('matches')
     .update(patch)

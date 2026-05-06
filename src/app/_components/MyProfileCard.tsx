@@ -22,9 +22,8 @@ export function MyProfileCard({ player }: { player: Player }) {
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-y-2 text-sm">
-        <Cell label="Primary">{POSITION_LABEL[player.primary_position]}</Cell>
-        <Cell label="Secondary">
-          {player.secondary_position ? POSITION_LABEL[player.secondary_position] : '—'}
+        <Cell label="Position ranking" wide>
+          1. {POSITION_LABEL[player.pref_1_position]} · 2. {POSITION_LABEL[player.pref_2_position]} · 3. {POSITION_LABEL[player.pref_3_position]}
         </Cell>
         <Cell label="Max block">{player.max_block_minutes} min</Cell>
         <Cell label="Max total">{player.max_total_minutes} min</Cell>
@@ -41,9 +40,9 @@ export function MyProfileCard({ player }: { player: Player }) {
   );
 }
 
-function Cell({ label, children }: { label: string; children: React.ReactNode }) {
+function Cell({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
   return (
-    <div>
+    <div className={wide ? 'col-span-2' : ''}>
       <dt className="text-gray-500">{label}</dt>
       <dd className="text-gray-900">{children}</dd>
     </div>

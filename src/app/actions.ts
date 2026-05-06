@@ -46,23 +46,25 @@ export async function identifyByName(formData: FormData): Promise<ActionResult> 
   redirect('/');
 }
 
+function parsePreferenceTriple(formData: FormData): { p1: Position; p2: Position; p3: Position } | string {
+  const p1 = parsePosition(formData.get('pref_1_position'));
+  const p2 = parsePosition(formData.get('pref_2_position'));
+  const p3 = parsePosition(formData.get('pref_3_position'));
+  if (!p1 || !p2 || !p3) return 'Rank all three positions (1st, 2nd, 3rd).';
+  if (p1 === p2 || p1 === p3 || p2 === p3) return 'Each position can only appear once in your ranking.';
+  return { p1, p2, p3 };
+}
+
 export async function createMyProfile(formData: FormData): Promise<ActionResult> {
   const name = String(formData.get('name') ?? '').trim();
-  const primary = parsePosition(formData.get('primary_position'));
-  const secondaryRaw = formData.get('secondary_position');
-  const secondary =
-    typeof secondaryRaw === 'string' && secondaryRaw !== '' ? parsePosition(secondaryRaw) : null;
+  const prefs = parsePreferenceTriple(formData);
   const block = parseInt1To120(formData.get('max_block_minutes'));
   const total = parseInt1To120(formData.get('max_total_minutes'));
   const skill = parseSkill(formData.get('skill_score'));
   const isGk = formData.get('is_goalkeeper') === 'on';
 
   if (!name) return { error: 'Name is required.' };
-  if (!primary) return { error: 'Pick a primary position.' };
-  if (secondary === null && typeof secondaryRaw === 'string' && secondaryRaw !== '') {
-    return { error: 'Secondary position must be attack, midfield, or defence.' };
-  }
-  if (secondary && secondary === primary) return { error: 'Secondary must differ from primary.' };
+  if (typeof prefs === 'string') return { error: prefs };
   if (block === null) return { error: 'Block minutes must be a whole number 1–120.' };
   if (total === null) return { error: 'Total minutes must be a whole number 1–120.' };
   if (total < block) return { error: 'Total minutes must be ≥ block minutes.' };
@@ -71,8 +73,9 @@ export async function createMyProfile(formData: FormData): Promise<ActionResult>
   try {
     const player = await createPlayer({
       name,
-      primary_position: primary,
-      secondary_position: secondary,
+      pref_1_position: prefs.p1,
+      pref_2_position: prefs.p2,
+      pref_3_position: prefs.p3,
       max_block_minutes: block,
       max_total_minutes: total,
       skill_score: skill,
@@ -94,24 +97,21 @@ export async function updateMyProfile(formData: FormData): Promise<ActionResult>
   const id = await getCurrentPlayerId();
   if (!id) redirect('/');
 
-  const primary = parsePosition(formData.get('primary_position'));
-  const secondaryRaw = formData.get('secondary_position');
-  const secondary =
-    typeof secondaryRaw === 'string' && secondaryRaw !== '' ? parsePosition(secondaryRaw) : null;
+  const prefs = parsePreferenceTriple(formData);
   const block = parseInt1To120(formData.get('max_block_minutes'));
   const total = parseInt1To120(formData.get('max_total_minutes'));
   const skillRaw = formData.get('skill_score');
   const isGk = formData.get('is_goalkeeper') === 'on';
 
-  if (!primary) return { error: 'Pick a primary position.' };
-  if (secondary && secondary === primary) return { error: 'Secondary must differ from primary.' };
+  if (typeof prefs === 'string') return { error: prefs };
   if (block === null) return { error: 'Block minutes must be a whole number 1–120.' };
   if (total === null) return { error: 'Total minutes must be a whole number 1–120.' };
   if (total < block) return { error: 'Total minutes must be ≥ block minutes.' };
 
   const patch: Record<string, unknown> = {
-    primary_position: primary,
-    secondary_position: secondary,
+    pref_1_position: prefs.p1,
+    pref_2_position: prefs.p2,
+    pref_3_position: prefs.p3,
     max_block_minutes: block,
     max_total_minutes: total,
     is_goalkeeper: isGk,
