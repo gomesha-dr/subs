@@ -278,39 +278,32 @@ function pickFreshPlayer(
   slotMinutes: number,
   currentSlot: number,
 ): PlayerForScheduling | null {
-  // Try increasingly relaxed constraints so we never leave a slot empty unless the
-  // pool is genuinely too small. Level 0 = strict; level 1 = ignore rest-after-block;
-  // level 2 = also ignore max_total budget. Even at level 2, alreadyPlaced and
-  // current_block_start are still respected (a player can't fill two seats at once).
-  for (let level = 0; level <= 2; level++) {
-    const eligible = outfield.filter((p) => {
-      if (alreadyPlaced.has(p.id)) return false;
-      const s = state.get(p.id)!;
-      if (s.current_block_start !== null) return false;
-      if (level < 1 && s.rest_until_slot > currentSlot) return false;
-      if (level < 2 && s.minutes_used + slotMinutes > (budgets.get(p.id) ?? 0)) return false;
-      return true;
-    });
-    if (eligible.length === 0) continue;
+  const eligible = outfield.filter((p) => {
+    if (alreadyPlaced.has(p.id)) return false;
+    const s = state.get(p.id)!;
+    if (s.current_block_start !== null) return false;
+    if (s.rest_until_slot > currentSlot) return false; // mandatory rest after a block ends
+    if (s.minutes_used + slotMinutes > (budgets.get(p.id) ?? 0)) return false;
+    return true;
+  });
+  if (eligible.length === 0) return null;
 
-    // Sort: rank → most remaining budget → highest max_block → highest skill →
-    // random tiebreaker. Skill is the main user-requested tiebreaker; random is
-    // the fallback so re-generating the same input can produce variation.
-    eligible.sort((a, b) => {
-      const aRank = positionRankFor(a, pos);
-      const bRank = positionRankFor(b, pos);
-      if (aRank !== bRank) return aRank - bRank;
-      const aRemaining = (budgets.get(a.id) ?? 0) - (state.get(a.id)?.minutes_used ?? 0);
-      const bRemaining = (budgets.get(b.id) ?? 0) - (state.get(b.id)?.minutes_used ?? 0);
-      if (aRemaining !== bRemaining) return bRemaining - aRemaining;
-      if (a.max_block_minutes !== b.max_block_minutes)
-        return b.max_block_minutes - a.max_block_minutes;
-      if (a.skill_score !== b.skill_score) return b.skill_score - a.skill_score;
-      return Math.random() - 0.5;
-    });
-    return eligible[0];
-  }
-  return null;
+  // Sort: rank → most remaining budget → highest max_block → highest skill →
+  // random tiebreaker. Skill is the main user-requested tiebreaker; random is
+  // the fallback so re-generating with truly-tied candidates produces variation.
+  eligible.sort((a, b) => {
+    const aRank = positionRankFor(a, pos);
+    const bRank = positionRankFor(b, pos);
+    if (aRank !== bRank) return aRank - bRank;
+    const aRemaining = (budgets.get(a.id) ?? 0) - (state.get(a.id)?.minutes_used ?? 0);
+    const bRemaining = (budgets.get(b.id) ?? 0) - (state.get(b.id)?.minutes_used ?? 0);
+    if (aRemaining !== bRemaining) return bRemaining - aRemaining;
+    if (a.max_block_minutes !== b.max_block_minutes)
+      return b.max_block_minutes - a.max_block_minutes;
+    if (a.skill_score !== b.skill_score) return b.skill_score - a.skill_score;
+    return Math.random() - 0.5;
+  });
+  return eligible[0];
 }
 
 function compressToBlocks(
