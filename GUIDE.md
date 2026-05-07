@@ -43,8 +43,8 @@ If you switch phones or clear browser data, just pick "I'm an existing player" o
 After people have ticked attendance:
 
 1. On the match page, **pick a formation** (2-3-2 = 2 def, 3 mid, 2 att, etc.) and set the **goalkeeper**.
-2. Tap **Generate schedule**. The app produces a starting XI plus a substitution plan, balancing block time → total time → skill.
-3. Review the timeline. If anything's missing or you want a tweak, tap **Edit schedule** — change any block, add new ones, delete.
+2. Tap **Generate roster**. The app produces a starting lineup plus a substitution plan, balancing block time → total time → skill.
+3. Review the timeline. If anything's missing or you want a tweak, tap **Edit roster** — change any block, add new ones, delete.
 4. On match day at the pitch, tap **▶ Run match**. You get a live clock with **audible sub alerts**: when each substitution minute hits, your phone beeps and shows a card saying "Player X off, Player Y on." Auto-pauses at half-time.
 
 ---

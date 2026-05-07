@@ -7,7 +7,7 @@ export function GenerateScheduleButton({
   matchId,
   disabled,
   disabledReason,
-  label = 'Generate schedule',
+  label = 'Generate roster',
   hasEdits,
 }: {
   matchId: string;
@@ -23,7 +23,7 @@ export function GenerateScheduleButton({
     setError(null);
     if (hasEdits) {
       const ok = window.confirm(
-        'Re-generating will replace the schedule you edited manually. Continue?',
+        'Re-generating will replace the roster you edited manually. Continue?',
       );
       if (!ok) return;
     }

@@ -206,13 +206,13 @@ export default async function MatchDetailPage({ params }: Params) {
             </button>
           </form>
           <p className="mt-2 text-xs text-gray-500">
-            Changing duration after a schedule has been generated will leave the schedule out of sync — re-generate after any change.
+            Changing duration after a roster has been generated will leave the roster out of sync — re-generate after any change.
           </p>
         </section>
 
         <section className="rounded-lg border border-gray-200 p-4 bg-white">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs uppercase tracking-wide text-gray-500">Schedule</p>
+            <p className="text-xs uppercase tracking-wide text-gray-500">Roster</p>
             {schedule && (
               <form action={clearScheduleAction.bind(null, matchId)}>
                 <button type="submit" className="text-xs text-gray-500 underline">
@@ -260,7 +260,7 @@ export default async function MatchDetailPage({ params }: Params) {
                   href={`/matches/${matchId}/edit-schedule`}
                   className="flex-1 text-center rounded-md border border-gray-300 bg-white py-2 text-sm"
                 >
-                  Edit schedule
+                  Edit roster
                 </Link>
                 <div className="flex-1">
                   <GenerateScheduleButton

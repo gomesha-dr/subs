@@ -23,9 +23,9 @@ export default async function EditSchedulePage({ params }: Params) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md text-center space-y-3">
-          <h1 className="text-2xl font-semibold">No schedule yet</h1>
+          <h1 className="text-2xl font-semibold">No roster yet</h1>
           <p className="text-sm text-gray-600">
-            Generate a schedule first, then come back here to fine-tune it.
+            Generate a roster first, then come back here to fine-tune it.
           </p>
           <Link
             href={`/matches/${matchId}`}

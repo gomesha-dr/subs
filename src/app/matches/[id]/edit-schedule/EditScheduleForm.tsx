@@ -94,7 +94,7 @@ export function EditScheduleForm({
           <Link href={`/matches/${matchId}`} className="text-sm underline text-gray-700">
             ← Cancel and back to match
           </Link>
-          <h1 className="text-2xl font-semibold mt-2">Edit schedule</h1>
+          <h1 className="text-2xl font-semibold mt-2">Edit roster</h1>
           <p className="text-sm text-gray-500">
             {durationMinutes}-min match · half at {halfLengthMinutes}&apos; · {slotMinutes}-min slots
           </p>
