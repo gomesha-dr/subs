@@ -4,6 +4,12 @@ export type Formation = { def: number; mid: number; att: number };
 
 export const POSITIONS_IN_ORDER: Position[] = ['defence', 'midfield', 'attack'];
 
+// Module-wide: minimum length any single block should run for. Pass A extends
+// blocks below this length; Pass B refuses to pick a fresh player whose
+// remaining budget or remaining slots before a boundary would force a shorter
+// stint than this.
+const MIN_BLOCK_LENGTH = 15;
+
 export function parseFormation(str: string): Formation | null {
   const match = /^(\d+)-(\d+)-(\d+)$/.exec(str);
   if (!match) return null;
@@ -182,10 +188,6 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     //   - capHitOnly: only the max_block cap is what would force the end —
     //     candidate for deferral if too many subs are happening this slot
     //
-    // Minimum block length: any block that would end purely because the cap was
-    // reached, but hasn't yet reached MIN_BLOCK_LENGTH minutes, gets the cap
-    // extended automatically and continues. Avoids short stints under 15 min.
-    const MIN_BLOCK_LENGTH = 15;
     type CapHit = { p: PlayerForScheduling; pos: Position };
     const capHitCandidates: CapHit[] = [];
     const mustEndStates: Array<{ p: PlayerForScheduling }> = [];
@@ -271,9 +273,15 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     }
 
     // Pass B: fill remaining seats with new players.
+    // Compute slots remaining before the next boundary (halftime or end-of-
+    // effective-slots) so pickFreshPlayer can refuse picks that would result in
+    // a block under MIN_BLOCK_LENGTH.
+    const nextBoundary =
+      halftimeSlot > slot && halftimeSlot < effectiveSlots ? halftimeSlot : effectiveSlots;
+    const slotsUntilNextBoundary = nextBoundary - slot;
     for (const [pos] of POSITIONS_TUPLE) {
       while (remainingByPosition[pos] > 0) {
-        const chosen = pickFreshPlayer(outfield, pos, placedThisSlot, state, budgets, input.slot_minutes, slot);
+        const chosen = pickFreshPlayer(outfield, pos, placedThisSlot, state, budgets, input.slot_minutes, slot, slotsUntilNextBoundary);
         if (!chosen) break; // no eligible player; slot stays under-filled
         assignments.push({ player_id: chosen.id, position: pos, slot });
         const s = state.get(chosen.id)!;
@@ -408,13 +416,22 @@ function pickFreshPlayer(
   budgets: Map<string, number>,
   slotMinutes: number,
   currentSlot: number,
+  slotsUntilNextBoundary: number,
 ): PlayerForScheduling | null {
+  // Don't start a new block too close to a boundary (halftime / end of effective
+  // slots) — the resulting stint would be cut short below MIN_BLOCK_LENGTH.
+  const minBlockSlotsRemaining = Math.ceil(MIN_BLOCK_LENGTH / slotMinutes);
+  if (slotsUntilNextBoundary < minBlockSlotsRemaining) return null;
+
   const eligible = outfield.filter((p) => {
     if (alreadyPlaced.has(p.id)) return false;
     const s = state.get(p.id)!;
     if (s.current_block_start !== null) return false;
     if (s.rest_until_slot > currentSlot) return false; // mandatory rest after a block ends
-    if (s.minutes_used + slotMinutes > (budgets.get(p.id) ?? 0)) return false;
+    const budget = budgets.get(p.id) ?? 0;
+    if (s.minutes_used + slotMinutes > budget) return false;
+    // Refuse picks that wouldn't have enough remaining budget to fit a min block.
+    if (budget - s.minutes_used < MIN_BLOCK_LENGTH) return false;
     return true;
   });
   if (eligible.length === 0) return null;
