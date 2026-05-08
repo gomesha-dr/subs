@@ -142,6 +142,18 @@ export async function updateMatchTimingsFromForm(
     }
   }
 
+  // Min block length: optional. Empty leaves null (uses default 10). Explicit 0 disables.
+  const minBlockLenRaw = formData.get('min_block_length_minutes');
+  let minBlockLen: number | null = null;
+  if (typeof minBlockLenRaw === 'string' && minBlockLenRaw.trim() !== '') {
+    const n = Number(minBlockLenRaw);
+    if (Number.isInteger(n) && n >= 0 && n <= 60) {
+      minBlockLen = n;
+    } else {
+      return; // invalid
+    }
+  }
+
   // Silent reject on invalid input — UI's number inputs already constrain.
   if (duration === null || half === null) return;
   if (half > duration) return;
@@ -152,6 +164,7 @@ export async function updateMatchTimingsFromForm(
     notes,
     min_block_override_minutes: minBlockOverride,
     settle_in_minutes: settleIn,
+    min_block_length_minutes: minBlockLen,
   });
   revalidatePath(`/matches/${matchId}`);
 }
@@ -222,6 +235,7 @@ export async function generateScheduleAction(matchId: string): Promise<ActionRes
     goalkeeper_id: match.goalkeeper_id,
     attending_players: players,
     settle_in_minutes: match.settle_in_minutes,
+    min_block_length_minutes: match.min_block_length_minutes,
   });
 
   if ('kind' in result) {

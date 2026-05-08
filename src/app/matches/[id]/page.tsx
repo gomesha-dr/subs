@@ -175,7 +175,7 @@ export default async function MatchDetailPage({ params }: Params) {
           <form
             action={updateMatchTimingsFromForm.bind(null, matchId)}
             className="space-y-2"
-            key={`timings-${match.duration_minutes}-${match.half_length_minutes}-${match.notes ?? ''}-${match.min_block_override_minutes ?? ''}-${match.settle_in_minutes ?? ''}`}
+            key={`timings-${match.duration_minutes}-${match.half_length_minutes}-${match.notes ?? ''}-${match.min_block_override_minutes ?? ''}-${match.settle_in_minutes ?? ''}-${match.min_block_length_minutes ?? ''}`}
           >
             <div className="grid grid-cols-2 gap-2 text-sm">
               <label className="block">
@@ -235,6 +235,23 @@ export default async function MatchDetailPage({ params }: Params) {
               />
               <span className="block mt-1 text-xs text-gray-500">
                 No substitutions during the first X minutes — gives the team a clean start before any churn. Players whose own max_block is below X will still sub at their max_block (the algorithm doesn&apos;t exceed individual caps).
+              </span>
+            </label>
+            <label className="block text-sm">
+              <span className="block text-xs text-gray-600 mb-1">
+                Min block length (every stint at least X min)
+              </span>
+              <input
+                name="min_block_length_minutes"
+                type="number"
+                min={0}
+                max={60}
+                defaultValue={match.min_block_length_minutes ?? ''}
+                placeholder="Default: 10. Set 0 to disable."
+                className="w-full rounded-md border border-gray-300 p-2 text-sm"
+              />
+              <span className="block mt-1 text-xs text-gray-500">
+                Every block on the pitch will be at least this long. Blank = default 10 min. 0 = no minimum (allows any stint length, including 5-min ones). Higher values mean fewer subs but possibly some unfilled minutes at boundaries (halftime / end of match).
               </span>
             </label>
             <label className="block text-sm">
