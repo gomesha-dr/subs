@@ -176,6 +176,15 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     const placedThisSlot = new Set<string>();
 
     // Pass A: continuity — keep players currently on if they can stay.
+    // Three buckets per player:
+    //   - continue: meets all constraints, plays this slot
+    //   - mustEnd: budget exhausted or position no longer needed (always ends)
+    //   - capHitOnly: only the max_block cap is what would force the end —
+    //     candidate for deferral if too many subs are happening this slot
+    type CapHit = { p: PlayerForScheduling; pos: Position };
+    const capHitCandidates: CapHit[] = [];
+    const mustEndStates: Array<{ p: PlayerForScheduling }> = [];
+
     for (const p of outfield) {
       const s = state.get(p.id)!;
       if (s.current_block_start === null || s.current_position === null) continue;
@@ -185,20 +194,66 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
       const stillUnderBlockCap = wouldBeBlockMinutes <= s.current_block_cap_minutes;
       const positionStillNeeded = remainingByPosition[s.current_position] > 0;
       if (stillHasBudget && stillUnderBlockCap && positionStillNeeded) {
+        // Continue normally.
         assignments.push({ player_id: p.id, position: s.current_position, slot });
         s.minutes_used = wouldBeMinutesUsed;
         s.current_block_minutes = wouldBeBlockMinutes;
-        // current_block_start, current_position unchanged
         remainingByPosition[s.current_position]--;
         placedThisSlot.add(p.id);
+      } else if (!stillHasBudget || !positionStillNeeded) {
+        mustEndStates.push({ p });
       } else {
-        // End this player's current block. After hitting max_block they need to sit
-        // out at least 10 minutes (two slots) before being re-eligible.
+        // Only the cap is preventing them from staying — defer-eligible.
+        capHitCandidates.push({ p, pos: s.current_position });
+      }
+    }
+
+    // Sub-cap: limit total simultaneous block-ends per slot. Must-ends count
+    // first; cap-hits fill the remaining slots up to the cap. Excess cap-hits
+    // get their cap extended by one slot and continue this slot.
+    const SUB_CAP_PER_SLOT = 3;
+    const slotsForCapEnds = Math.max(0, SUB_CAP_PER_SLOT - mustEndStates.length);
+    capHitCandidates.sort(
+      (a, b) =>
+        (state.get(b.p.id)!.current_block_minutes) -
+        (state.get(a.p.id)!.current_block_minutes),
+    );
+    const capActuallyEnd = capHitCandidates.slice(0, slotsForCapEnds);
+    const capDeferred = capHitCandidates.slice(slotsForCapEnds);
+
+    // Apply must-ends.
+    for (const { p } of mustEndStates) {
+      const s = state.get(p.id)!;
+      s.current_block_start = null;
+      s.current_position = null;
+      s.current_block_minutes = 0;
+      s.rest_until_slot = slot + 2;
+    }
+    // Apply cap-actual-ends.
+    for (const { p } of capActuallyEnd) {
+      const s = state.get(p.id)!;
+      s.current_block_start = null;
+      s.current_position = null;
+      s.current_block_minutes = 0;
+      s.rest_until_slot = slot + 2;
+    }
+    // Apply cap-deferreds: extend their cap by one slot and continue them this slot.
+    for (const { p, pos } of capDeferred) {
+      const s = state.get(p.id)!;
+      if (remainingByPosition[pos] <= 0) {
+        // Position got filled by other continuity; have to end after all.
         s.current_block_start = null;
         s.current_position = null;
         s.current_block_minutes = 0;
         s.rest_until_slot = slot + 2;
+        continue;
       }
+      s.current_block_cap_minutes += input.slot_minutes;
+      assignments.push({ player_id: p.id, position: pos, slot });
+      s.minutes_used += input.slot_minutes;
+      s.current_block_minutes += input.slot_minutes;
+      remainingByPosition[pos]--;
+      placedThisSlot.add(p.id);
     }
 
     // Pass B: fill remaining seats with new players.
