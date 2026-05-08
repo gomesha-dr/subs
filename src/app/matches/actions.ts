@@ -128,6 +128,20 @@ export async function updateMatchTimingsFromForm(
     }
   }
 
+  // Settle-in: optional. Empty or 0 clears it.
+  const settleInRaw = formData.get('settle_in_minutes');
+  let settleIn: number | null = null;
+  if (typeof settleInRaw === 'string' && settleInRaw.trim() !== '') {
+    const n = Number(settleInRaw);
+    if (Number.isInteger(n) && n >= 1 && n <= 60) {
+      settleIn = n;
+    } else if (n === 0) {
+      settleIn = null;
+    } else {
+      return; // invalid
+    }
+  }
+
   // Silent reject on invalid input — UI's number inputs already constrain.
   if (duration === null || half === null) return;
   if (half > duration) return;
@@ -137,6 +151,7 @@ export async function updateMatchTimingsFromForm(
     half_length_minutes: half,
     notes,
     min_block_override_minutes: minBlockOverride,
+    settle_in_minutes: settleIn,
   });
   revalidatePath(`/matches/${matchId}`);
 }
@@ -206,6 +221,7 @@ export async function generateScheduleAction(matchId: string): Promise<ActionRes
     formation,
     goalkeeper_id: match.goalkeeper_id,
     attending_players: players,
+    settle_in_minutes: match.settle_in_minutes,
   });
 
   if ('kind' in result) {

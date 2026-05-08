@@ -35,6 +35,7 @@ export type Match = {
   formation: string | null;
   generated_schedule: unknown | null;
   min_block_override_minutes: number | null;
+  settle_in_minutes: number | null;
   created_at: string;
   updated_at: string;
 };

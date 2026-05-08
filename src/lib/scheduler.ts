@@ -43,6 +43,7 @@ export type SchedulerInput = {
   formation: Formation;
   goalkeeper_id: string | null;
   attending_players: PlayerForScheduling[];
+  settle_in_minutes?: number | null;
 };
 
 export type ScheduleBlock = {
@@ -211,10 +212,22 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
         // (which would put many into mandatory rest simultaneously and leave
         // seats unfillable). After the first block, subsequent blocks use the
         // player's full max_block.
+        //
+        // Settle-in floor: if the match has a settle_in_minutes, every starter's
+        // first-block cap is at least settle_in_minutes (capped by their own
+        // max_block — a player with max_block 10 will still sub at min 10 even
+        // if settle_in is 15). This gives a clean opening with no churn.
         if (slot === 0 && chosen.max_block_minutes > input.slot_minutes) {
           const slotsRange = chosen.max_block_minutes / input.slot_minutes;
           const randomSlots = 1 + Math.floor(Math.random() * slotsRange);
-          s.current_block_cap_minutes = randomSlots * input.slot_minutes;
+          let capMinutes = randomSlots * input.slot_minutes;
+          if (input.settle_in_minutes && input.settle_in_minutes > 0) {
+            capMinutes = Math.min(
+              chosen.max_block_minutes,
+              Math.max(capMinutes, input.settle_in_minutes),
+            );
+          }
+          s.current_block_cap_minutes = capMinutes;
         } else {
           s.current_block_cap_minutes = chosen.max_block_minutes;
         }

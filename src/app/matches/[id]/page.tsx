@@ -175,7 +175,7 @@ export default async function MatchDetailPage({ params }: Params) {
           <form
             action={updateMatchTimingsFromForm.bind(null, matchId)}
             className="space-y-2"
-            key={`timings-${match.duration_minutes}-${match.half_length_minutes}-${match.notes ?? ''}-${match.min_block_override_minutes ?? ''}`}
+            key={`timings-${match.duration_minutes}-${match.half_length_minutes}-${match.notes ?? ''}-${match.min_block_override_minutes ?? ''}-${match.settle_in_minutes ?? ''}`}
           >
             <div className="grid grid-cols-2 gap-2 text-sm">
               <label className="block">
@@ -218,6 +218,23 @@ export default async function MatchDetailPage({ params }: Params) {
               />
               <span className="block mt-1 text-xs text-gray-500">
                 Floors every player&apos;s max_block at this number for this match. Useful when the squad is small — bumps everyone&apos;s minimum stint length so rest cycles don&apos;t leave seats empty. Players already above this aren&apos;t affected.
+              </span>
+            </label>
+            <label className="block text-sm">
+              <span className="block text-xs text-gray-600 mb-1">
+                Settle-in period (no subs first X min)
+              </span>
+              <input
+                name="settle_in_minutes"
+                type="number"
+                min={0}
+                max={60}
+                defaultValue={match.settle_in_minutes ?? ''}
+                placeholder="Leave blank for no settle-in"
+                className="w-full rounded-md border border-gray-300 p-2 text-sm"
+              />
+              <span className="block mt-1 text-xs text-gray-500">
+                No substitutions during the first X minutes — gives the team a clean start before any churn. Players whose own max_block is below X will still sub at their max_block (the algorithm doesn&apos;t exceed individual caps).
               </span>
             </label>
             <label className="block text-sm">
