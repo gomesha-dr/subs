@@ -13,6 +13,7 @@ import {
 } from '../actions';
 import { Timeline } from './Timeline';
 import { GenerateScheduleButton } from './GenerateScheduleButton';
+import { parseFormation, totalOutfieldSeats } from '@/lib/scheduler';
 
 function formatDate(dateStr: string, timeStr: string | null): string {
   const date = new Date(dateStr + 'T00:00:00');
@@ -67,6 +68,17 @@ export default async function MatchDetailPage({ params }: Params) {
 
   const attendingPlayers = players.filter((p) => attendanceByPlayer.get(p.id)?.is_attending);
   const outfieldAttendingPlayers = attendingPlayers.filter((p) => p.id !== match.goalkeeper_id);
+
+  // Squad capacity check: do attending players' max_total minutes add up to enough
+  // for every seat × every minute? If not, gaps are mathematically unavoidable.
+  const parsedFormation = match.formation ? parseFormation(match.formation) : null;
+  const seatsPerSlot = parsedFormation ? totalOutfieldSeats(parsedFormation) : 0;
+  const seatMinutesNeeded = seatsPerSlot * match.duration_minutes;
+  const squadCapacityMinutes = outfieldAttendingPlayers.reduce(
+    (sum, p) => sum + p.max_total_minutes,
+    0,
+  );
+  const capacityShortage = seatMinutesNeeded - squadCapacityMinutes;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -222,6 +234,19 @@ export default async function MatchDetailPage({ params }: Params) {
             )}
           </div>
 
+          {match.formation && capacityShortage > 0 && outfieldAttending >= 7 && (
+            <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs">
+              <p className="font-medium text-amber-900 mb-1">
+                Squad capacity short by {capacityShortage} min
+              </p>
+              <p className="text-amber-800">
+                Match needs {seatMinutesNeeded} player-minutes ({seatsPerSlot} seats × {match.duration_minutes} min). Squad supplies {squadCapacityMinutes} min (sum of attending players&apos; max_total).
+              </p>
+              <p className="text-amber-800 mt-1">
+                The roster will leave roughly the last {Math.ceil(capacityShortage / seatsPerSlot)} min unfilled. Ask teammates to bump their max_total to cover, or just plan to manage the final stretch on the touchline.
+              </p>
+            </div>
+          )}
           {!schedule ? (
             <div className="space-y-2">
               <p className="text-sm text-gray-600">

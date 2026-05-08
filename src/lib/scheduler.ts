@@ -139,7 +139,18 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
       ? Math.round(input.half_length_minutes / input.slot_minutes)
       : -1;
 
-  for (let slot = 0; slot < N; slot++) {
+  // Capacity-aware truncation: when sum of player budgets can't cover every seat
+  // for every minute of the match, stop the algorithm early so any gaps land at
+  // the END of the game (where the captain can substitute by eye) instead of
+  // scattered through the middle.
+  const totalBudgetMinutes = Array.from(budgets.values()).reduce((s, m) => s + m, 0);
+  const totalSeatMinutes = N * seats * input.slot_minutes;
+  const effectiveSlots =
+    totalBudgetMinutes >= totalSeatMinutes
+      ? N
+      : Math.floor(totalBudgetMinutes / (seats * input.slot_minutes));
+
+  for (let slot = 0; slot < effectiveSlots; slot++) {
     if (slot === halftimeSlot) {
       for (const s of state.values()) {
         s.current_block_start = null;
