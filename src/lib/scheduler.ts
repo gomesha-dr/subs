@@ -281,12 +281,14 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     }
 
     // Pass B: fill remaining seats with new players.
-    // Compute slots remaining before the next boundary (halftime or end-of-
-    // effective-slots) so pickFreshPlayer can refuse picks that would result in
-    // a block under MIN_BLOCK_LENGTH.
-    const nextBoundary =
-      halftimeSlot > slot && halftimeSlot < effectiveSlots ? halftimeSlot : effectiveSlots;
-    const slotsUntilNextBoundary = nextBoundary - slot;
+    // Compute slots remaining before the NEXT HALFTIME (not end-of-match):
+    // we don't want short stints cut off by halftime since halftime is a real
+    // break, but a short stint at the very end of the match is fine (whistle
+    // blows naturally; better than leaving the seat empty).
+    const slotsUntilNextBoundary =
+      halftimeSlot > slot && halftimeSlot < effectiveSlots
+        ? halftimeSlot - slot
+        : Number.MAX_SAFE_INTEGER;
     for (const [pos] of POSITIONS_TUPLE) {
       while (remainingByPosition[pos] > 0) {
         const chosen = pickFreshPlayer(outfield, pos, placedThisSlot, state, budgets, input.slot_minutes, slot, slotsUntilNextBoundary, MIN_BLOCK_LENGTH);
