@@ -114,6 +114,7 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     current_block_start: number | null;
     current_position: Position | null;
     current_block_minutes: number;
+    current_block_cap_minutes: number; // per-block max length; randomised for starters to stagger first sub-outs
     rest_until_slot: number;
   };
   const state = new Map<string, PlayerState>();
@@ -123,6 +124,7 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
       current_block_start: null,
       current_position: null,
       current_block_minutes: 0,
+      current_block_cap_minutes: p.max_block_minutes,
       rest_until_slot: 0,
     });
   }
@@ -174,7 +176,7 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
       const wouldBeMinutesUsed = s.minutes_used + input.slot_minutes;
       const wouldBeBlockMinutes = s.current_block_minutes + input.slot_minutes;
       const stillHasBudget = wouldBeMinutesUsed <= (budgets.get(p.id) ?? 0);
-      const stillUnderBlockCap = wouldBeBlockMinutes <= p.max_block_minutes;
+      const stillUnderBlockCap = wouldBeBlockMinutes <= s.current_block_cap_minutes;
       const positionStillNeeded = remainingByPosition[s.current_position] > 0;
       if (stillHasBudget && stillUnderBlockCap && positionStillNeeded) {
         assignments.push({ player_id: p.id, position: s.current_position, slot });
@@ -204,6 +206,18 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
         s.current_block_start = slot;
         s.current_position = pos;
         s.current_block_minutes = input.slot_minutes;
+        // Starters at slot 0 get a random first-block cap between one slot and
+        // their max_block, so they don't all hit max_block at the same minute
+        // (which would put many into mandatory rest simultaneously and leave
+        // seats unfillable). After the first block, subsequent blocks use the
+        // player's full max_block.
+        if (slot === 0 && chosen.max_block_minutes > input.slot_minutes) {
+          const slotsRange = chosen.max_block_minutes / input.slot_minutes;
+          const randomSlots = 1 + Math.floor(Math.random() * slotsRange);
+          s.current_block_cap_minutes = randomSlots * input.slot_minutes;
+        } else {
+          s.current_block_cap_minutes = chosen.max_block_minutes;
+        }
         remainingByPosition[pos]--;
         placedThisSlot.add(chosen.id);
       }
