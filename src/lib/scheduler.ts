@@ -38,6 +38,7 @@ function positionRankFor(p: PlayerForScheduling, pos: Position): 1 | 2 | 3 {
 
 export type SchedulerInput = {
   match_duration_minutes: number;
+  half_length_minutes: number;
   slot_minutes: number;
   formation: Formation;
   goalkeeper_id: string | null;
@@ -129,7 +130,24 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
   type SlotAssignment = { player_id: string; position: Position; slot: number };
   const assignments: SlotAssignment[] = [];
 
+  // Halftime: a 15-min break separates the first and second half. At the slot
+  // boundary, every player's block-tracking and rest-timer is cleared — they're
+  // all "fresh" again for the second half (max_block resets, no carry-over rest).
+  // max_total still tracks across the whole match.
+  const halftimeSlot =
+    input.half_length_minutes > 0 && input.half_length_minutes < input.match_duration_minutes
+      ? Math.round(input.half_length_minutes / input.slot_minutes)
+      : -1;
+
   for (let slot = 0; slot < N; slot++) {
+    if (slot === halftimeSlot) {
+      for (const s of state.values()) {
+        s.current_block_start = null;
+        s.current_position = null;
+        s.current_block_minutes = 0;
+        s.rest_until_slot = 0;
+      }
+    }
     const remainingByPosition: Record<Position, number> = {
       defence: input.formation.def,
       midfield: input.formation.mid,
@@ -155,12 +173,12 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
         remainingByPosition[s.current_position]--;
         placedThisSlot.add(p.id);
       } else {
-        // End this player's current block. They were on the pitch through the previous
-        // slot, so they must sit out at least the current slot (no Pass-B rescue).
+        // End this player's current block. After hitting max_block they need to sit
+        // out at least 10 minutes (two slots) before being re-eligible.
         s.current_block_start = null;
         s.current_position = null;
         s.current_block_minutes = 0;
-        s.rest_until_slot = slot + 1;
+        s.rest_until_slot = slot + 2;
       }
     }
 

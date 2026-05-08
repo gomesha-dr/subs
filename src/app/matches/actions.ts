@@ -182,6 +182,7 @@ export async function generateScheduleAction(matchId: string): Promise<ActionRes
 
   const result = generateSchedule({
     match_duration_minutes: match.duration_minutes,
+    half_length_minutes: match.half_length_minutes,
     slot_minutes: 5,
     formation,
     goalkeeper_id: match.goalkeeper_id,
