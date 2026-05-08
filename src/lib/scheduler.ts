@@ -181,6 +181,11 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     //   - mustEnd: budget exhausted or position no longer needed (always ends)
     //   - capHitOnly: only the max_block cap is what would force the end —
     //     candidate for deferral if too many subs are happening this slot
+    //
+    // Minimum block length: any block that would end purely because the cap was
+    // reached, but hasn't yet reached MIN_BLOCK_LENGTH minutes, gets the cap
+    // extended automatically and continues. Avoids tiny 5-min stints.
+    const MIN_BLOCK_LENGTH = 10;
     type CapHit = { p: PlayerForScheduling; pos: Position };
     const capHitCandidates: CapHit[] = [];
     const mustEndStates: Array<{ p: PlayerForScheduling }> = [];
@@ -193,8 +198,17 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
       const stillHasBudget = wouldBeMinutesUsed <= (budgets.get(p.id) ?? 0);
       const stillUnderBlockCap = wouldBeBlockMinutes <= s.current_block_cap_minutes;
       const positionStillNeeded = remainingByPosition[s.current_position] > 0;
-      if (stillHasBudget && stillUnderBlockCap && positionStillNeeded) {
-        // Continue normally.
+      const blockBelowMin = s.current_block_minutes < MIN_BLOCK_LENGTH;
+      if (
+        stillHasBudget &&
+        positionStillNeeded &&
+        (stillUnderBlockCap || blockBelowMin)
+      ) {
+        // Continue. If only the cap was preventing it but the block is below
+        // the minimum length, extend the cap to allow this slot.
+        if (!stillUnderBlockCap) {
+          s.current_block_cap_minutes = wouldBeBlockMinutes;
+        }
         assignments.push({ player_id: p.id, position: s.current_position, slot });
         s.minutes_used = wouldBeMinutesUsed;
         s.current_block_minutes = wouldBeBlockMinutes;
@@ -203,7 +217,7 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
       } else if (!stillHasBudget || !positionStillNeeded) {
         mustEndStates.push({ p });
       } else {
-        // Only the cap is preventing them from staying — defer-eligible.
+        // Cap hit, block is already at MIN_BLOCK_LENGTH or above — defer-eligible.
         capHitCandidates.push({ p, pos: s.current_position });
       }
     }
