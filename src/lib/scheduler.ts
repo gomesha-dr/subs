@@ -350,16 +350,17 @@ function pickFreshPlayer(
   });
   if (eligible.length === 0) return null;
 
-  // Sort: rank → most remaining budget → highest max_block → highest skill →
-  // random tiebreaker. Skill is the main user-requested tiebreaker; random is
-  // the fallback so re-generating with truly-tied candidates produces variation.
+  // Sort: rank → smallest fraction of own max_total used (so playing time
+  // spreads proportionally to each player's own willingness, not biased
+  // toward whoever has the highest absolute max_total) → highest max_block →
+  // highest skill → random tiebreaker.
   eligible.sort((a, b) => {
     const aRank = positionRankFor(a, pos);
     const bRank = positionRankFor(b, pos);
     if (aRank !== bRank) return aRank - bRank;
-    const aRemaining = (budgets.get(a.id) ?? 0) - (state.get(a.id)?.minutes_used ?? 0);
-    const bRemaining = (budgets.get(b.id) ?? 0) - (state.get(b.id)?.minutes_used ?? 0);
-    if (aRemaining !== bRemaining) return bRemaining - aRemaining;
+    const aFraction = a.max_total_minutes > 0 ? (state.get(a.id)?.minutes_used ?? 0) / a.max_total_minutes : 1;
+    const bFraction = b.max_total_minutes > 0 ? (state.get(b.id)?.minutes_used ?? 0) / b.max_total_minutes : 1;
+    if (aFraction !== bFraction) return aFraction - bFraction;
     if (a.max_block_minutes !== b.max_block_minutes)
       return b.max_block_minutes - a.max_block_minutes;
     if (a.skill_score !== b.skill_score) return b.skill_score - a.skill_score;
