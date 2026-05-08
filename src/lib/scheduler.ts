@@ -146,10 +146,12 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
   // events bunch up at the same slot.
   let slot0StarterIndex = 0;
 
-  // Halftime: a 15-min break separates the first and second half. At the slot
-  // boundary, every player's block-tracking and rest-timer is cleared — they're
-  // all "fresh" again for the second half (max_block resets, no carry-over rest).
-  // max_total still tracks across the whole match.
+  // Halftime: a 15-min break separates the first and second half. Players
+  // who were on the pitch at end of H1 continue their block into H2 — the
+  // block is logically one stretch, with block_minutes counting only playing
+  // time (halftime doesn't add to it). Only effect of halftime: any player
+  // who was in mandatory rest at end of H1 has their rest_until cleared
+  // (15 min is plenty). max_total still tracks across the whole match.
   const halftimeSlot =
     input.half_length_minutes > 0 && input.half_length_minutes < input.match_duration_minutes
       ? Math.round(input.half_length_minutes / input.slot_minutes)
@@ -174,10 +176,10 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
 
   for (let slot = 0; slot < effectiveSlots; slot++) {
     if (slot === halftimeSlot) {
+      // Only clear mandatory rest. Players in active blocks continue, with
+      // block_minutes accumulating across halftime (the break doesn't count
+      // as playing time, but the block is logically one stretch).
       for (const s of state.values()) {
-        s.current_block_start = null;
-        s.current_position = null;
-        s.current_block_minutes = 0;
         s.rest_until_slot = 0;
       }
     }
@@ -281,14 +283,10 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     }
 
     // Pass B: fill remaining seats with new players.
-    // Compute slots remaining before the NEXT HALFTIME (not end-of-match):
-    // we don't want short stints cut off by halftime since halftime is a real
-    // break, but a short stint at the very end of the match is fine (whistle
-    // blows naturally; better than leaving the seat empty).
-    const slotsUntilNextBoundary =
-      halftimeSlot > slot && halftimeSlot < effectiveSlots
-        ? halftimeSlot - slot
-        : Number.MAX_SAFE_INTEGER;
+    // Halftime is no longer a hard block boundary (blocks span halftime now),
+    // and end-of-match is the natural whistle. So no slot-based boundary check
+    // is needed — pickFreshPlayer just enforces the budget min-block.
+    const slotsUntilNextBoundary = Number.MAX_SAFE_INTEGER;
     for (const [pos] of POSITIONS_TUPLE) {
       while (remainingByPosition[pos] > 0) {
         const chosen = pickFreshPlayer(outfield, pos, placedThisSlot, state, budgets, input.slot_minutes, slot, slotsUntilNextBoundary, MIN_BLOCK_LENGTH);
