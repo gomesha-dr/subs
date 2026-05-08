@@ -34,6 +34,7 @@ export type Match = {
   notes: string | null;
   formation: string | null;
   generated_schedule: unknown | null;
+  min_block_override_minutes: number | null;
   created_at: string;
   updated_at: string;
 };

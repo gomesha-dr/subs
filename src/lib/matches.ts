@@ -47,6 +47,7 @@ export type CreateMatchInput = {
 export type UpdateMatchInput = Partial<CreateMatchInput> & {
   formation?: string | null;
   generated_schedule?: unknown | null;
+  min_block_override_minutes?: number | null;
 };
 
 export async function createMatch(input: CreateMatchInput): Promise<Match> {

@@ -114,6 +114,20 @@ export async function updateMatchTimingsFromForm(
   const notes =
     typeof notesRaw === 'string' && notesRaw.trim() !== '' ? notesRaw.trim() : null;
 
+  // Min-block override: optional. Empty string or 0 clears it.
+  const minBlockRaw = formData.get('min_block_override_minutes');
+  let minBlockOverride: number | null = null;
+  if (typeof minBlockRaw === 'string' && minBlockRaw.trim() !== '') {
+    const n = Number(minBlockRaw);
+    if (Number.isInteger(n) && n >= 1 && n <= 240) {
+      minBlockOverride = n;
+    } else if (n === 0) {
+      minBlockOverride = null;
+    } else {
+      return; // invalid
+    }
+  }
+
   // Silent reject on invalid input — UI's number inputs already constrain.
   if (duration === null || half === null) return;
   if (half > duration) return;
@@ -122,6 +136,7 @@ export async function updateMatchTimingsFromForm(
     duration_minutes: duration,
     half_length_minutes: half,
     notes,
+    min_block_override_minutes: minBlockOverride,
   });
   revalidatePath(`/matches/${matchId}`);
 }
@@ -169,13 +184,17 @@ export async function generateScheduleAction(matchId: string): Promise<ActionRes
   if (error) return { error: error.message };
 
   const allAttendingPlayers = (rawPlayers ?? []) as Player[];
+  const minBlockFloor = match.min_block_override_minutes;
   const players: PlayerForScheduling[] = allAttendingPlayers.map((p) => ({
     id: p.id,
     name: p.name,
     pref_1_position: p.pref_1_position,
     pref_2_position: p.pref_2_position,
     pref_3_position: p.pref_3_position,
-    max_block_minutes: p.max_block_minutes,
+    max_block_minutes:
+      minBlockFloor !== null && minBlockFloor > 0
+        ? Math.max(p.max_block_minutes, minBlockFloor)
+        : p.max_block_minutes,
     max_total_minutes: p.max_total_minutes,
     skill_score: p.skill_score,
   }));
