@@ -133,6 +133,11 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
   type SlotAssignment = { player_id: string; position: Position; slot: number };
   const assignments: SlotAssignment[] = [];
 
+  // Counter for starters placed at slot 0, used to give each starter a
+  // deterministically-spread first-block cap so no two starters' first sub
+  // events bunch up at the same slot.
+  let slot0StarterIndex = 0;
+
   // Halftime: a 15-min break separates the first and second half. At the slot
   // boundary, every player's block-tracking and rest-timer is cleared — they're
   // all "fresh" again for the second half (max_block resets, no carry-over rest).
@@ -207,27 +212,28 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
         s.current_block_start = slot;
         s.current_position = pos;
         s.current_block_minutes = input.slot_minutes;
-        // Starters at slot 0 get a random first-block cap between one slot and
-        // their max_block, so they don't all hit max_block at the same minute
-        // (which would put many into mandatory rest simultaneously and leave
-        // seats unfillable). After the first block, subsequent blocks use the
-        // player's full max_block.
+        // Starters at slot 0 get DETERMINISTICALLY-SPREAD first-block caps so
+        // their first sub events happen at different slots, not bunched up.
+        // The Nth starter (0-indexed, across all positions) gets a cap of
+        // ((N+1)/totalStarters) * their max_block, rounded to slot multiples.
+        // After their first block, subsequent blocks use the player's full
+        // max_block.
         //
         // Settle-in floor: if the match has a settle_in_minutes, every starter's
         // first-block cap is at least settle_in_minutes (capped by their own
-        // max_block — a player with max_block 10 will still sub at min 10 even
-        // if settle_in is 15). This gives a clean opening with no churn.
+        // max_block — a player with max_block 10 still subs at min 10 even if
+        // settle_in is 15). This gives a clean opening with no churn.
         if (slot === 0 && chosen.max_block_minutes > input.slot_minutes) {
-          const slotsRange = chosen.max_block_minutes / input.slot_minutes;
-          const randomSlots = 1 + Math.floor(Math.random() * slotsRange);
-          let capMinutes = randomSlots * input.slot_minutes;
+          const ratio = (slot0StarterIndex + 1) / Math.max(seats, 1);
+          const desiredMinutes = ratio * chosen.max_block_minutes;
+          const capSlots = Math.max(1, Math.floor(desiredMinutes / input.slot_minutes));
+          let capMinutes = capSlots * input.slot_minutes;
           if (input.settle_in_minutes && input.settle_in_minutes > 0) {
-            capMinutes = Math.min(
-              chosen.max_block_minutes,
-              Math.max(capMinutes, input.settle_in_minutes),
-            );
+            capMinutes = Math.max(capMinutes, input.settle_in_minutes);
           }
+          capMinutes = Math.min(chosen.max_block_minutes, capMinutes);
           s.current_block_cap_minutes = capMinutes;
+          slot0StarterIndex++;
         } else {
           s.current_block_cap_minutes = chosen.max_block_minutes;
         }
