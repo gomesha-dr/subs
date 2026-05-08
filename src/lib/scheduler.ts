@@ -184,8 +184,8 @@ export function generateSchedule(input: SchedulerInput): Schedule | SchedulerErr
     //
     // Minimum block length: any block that would end purely because the cap was
     // reached, but hasn't yet reached MIN_BLOCK_LENGTH minutes, gets the cap
-    // extended automatically and continues. Avoids tiny 5-min stints.
-    const MIN_BLOCK_LENGTH = 10;
+    // extended automatically and continues. Avoids short stints under 15 min.
+    const MIN_BLOCK_LENGTH = 15;
     type CapHit = { p: PlayerForScheduling; pos: Position };
     const capHitCandidates: CapHit[] = [];
     const mustEndStates: Array<{ p: PlayerForScheduling }> = [];
